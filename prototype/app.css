@@ -8,9 +8,6 @@
   -ms-user-select: none;
   user-select: none;
 }
-.checkbox .checkbox-label span {
-  margin: 0 6px;
-}
 .checkbox .checkbox-input {
   position: relative;
   display: inline-block;
@@ -65,6 +62,7 @@
 .checkbox .checkbox-label,
 .checkbox label {
   cursor: pointer;
+  margin: 0 6px;
 }
 .checkbox .checkbox-primary input[type='checkbox']:checked + .checkbox-icon:before {
   color: #2196f3;
