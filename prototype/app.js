@@ -108,6 +108,7 @@
       return;
     }
     doc.execCommand('copy');
+    textarea.focus();
   };
 
   // Public APIs
