@@ -68,8 +68,8 @@
     var undo = doc.querySelector('#' + name + '-undo');
     var input = doc.querySelector('#' + name + '-input');
     var alert = doc.querySelector('#' + name + '-alert');
-    var val = input.value;
     submit.onclick = function() {
+      var val = input.value;
       if (!opts.allowEmpty) {
         if (!val.length) {
           return;
