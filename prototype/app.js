@@ -70,6 +70,9 @@
     var alert = doc.querySelector('#' + name + '-alert');
     submit.onclick = function() {
       var val = input.value;
+      if (val === '') {
+        toolsAlert(name, 1500, 'Please insert your <b>code</b> first!');
+      }
       if (!opts.allowEmpty) {
         if (!val.length) {
           return;
@@ -110,5 +113,4 @@
   // Public APIs
   win.tools = tools;
   win.tools.alert = toolsAlert;
-  
 })(window, window.document);
