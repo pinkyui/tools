@@ -100,6 +100,16 @@
     toolsClear(name, submit, input);
   }
 
+  // Native SmoothScroll
+  var smoothScrollTo = function(el) {
+    win.scroll({
+      behavior: 'smooth',
+      left: 0,
+      top: el.getBoundingClientRect().top + win.pageYOffset + -300
+    });
+  };
+  var supportsSmoothScroll = 'scrollBehavior' in doc.documentElement.style;
+
   // Copy to Clipboard
   doc.querySelector('.tools-copy').onclick = function() {
     var textarea = doc.querySelector('#tools textarea');
@@ -108,7 +118,9 @@
       return;
     }
     doc.execCommand('copy');
-    textarea.focus();
+    if (supportsSmoothScroll) {
+      smoothScrollTo(textarea);
+    }
   };
 
   // Public APIs
