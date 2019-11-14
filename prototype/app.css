@@ -68,7 +68,7 @@
   color: #2196f3;
 }
 .checkbox .checkbox-secondary input[type='checkbox']:checked + .checkbox-icon:before {
-  border-color: #f50057;
+  color: #f50057;
 }
 .tools-undo {
   display: none;
