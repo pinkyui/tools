@@ -62,7 +62,8 @@
 .checkbox .checkbox-input input[type='checkbox']:checked + .checkbox-icon:before {
   content: '\f132';
 }
-.checkbox .checkbox-label {
+.checkbox .checkbox-label,
+.checkbox label {
   cursor: pointer;
 }
 .checkbox .checkbox-primary input[type='checkbox']:checked + .checkbox-icon:before {
