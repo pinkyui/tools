@@ -38,11 +38,10 @@
   };
 
   // Tools alert
-  function toolsAlert(name, timeout, content, margin) {
+  function toolsAlert(name, timeout, content) {
     var target = $('#' + name + '-alert');
     target.innerHTML = content;
     target.style.display = 'block';
-    target.style.margin = margin || '12px 0px';
     delay(function() {
       target.style.display = 'none';
     }, timeout);
@@ -70,7 +69,6 @@
   function toolsSize(name, original, output) {
     var size = $('#' + name + '-size');
     size.style.display = 'block';
-    size.style.margin = '12px 0px';
     var diff = original.length - output.length;
     var savings = original.length
       ? ((100 * diff) / original.length).toFixed(2)
