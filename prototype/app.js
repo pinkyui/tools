@@ -3,7 +3,6 @@
  * Tools.js v1.0.0-alpha
  * Copyright (c) 2019-present Muhammad Nur Fuad (illvart).
  * https://illvart.com
- *
  */
 (function(win, doc) {
   'use strict';
@@ -59,7 +58,9 @@
         if (arr.length === 0) {
           undo.style.display = 'none';
         }
-        submit.disabled = false;
+        if (submit.disabled === true) {
+          submit.disabled = false;
+        }
       },
       false
     );
@@ -94,7 +95,9 @@
       function() {
         input.value = '';
         input.focus();
-        submit.disabled = false;
+        if (submit.disabled === true) {
+          submit.disabled = false;
+        }
         if (size) {
           size.style.display = 'none';
         }
@@ -104,10 +107,11 @@
   }
 
   // Tools options for config
-  function toolsOptions(name) {
+  function toolsOptions(name, submit) {
     var options = $('#' + name + '-options');
     var settings = $('#' + name + '-settings');
-    if (!options || !settings) {
+    var textarea = $('#' + name + '-settings textarea');
+    if (!options || !settings || !textarea) {
       return;
     }
     options.addEventListener(
@@ -115,6 +119,16 @@
       function() {
         if (options.checked === true) {
           settings.style.display = 'block';
+
+          if (submit.disabled === true) {
+            textarea.addEventListener(
+              'input',
+              function() {
+                submit.disabled = false;
+              },
+              false
+            );
+          }
         } else {
           settings.style.display = 'none';
         }
@@ -178,6 +192,16 @@
         arr.push(val);
         submit.disabled = true;
         undo.style.display = 'inline-block';
+
+        if (submit.disabled === true) {
+          input.addEventListener(
+            'input',
+            function() {
+              submit.disabled = false;
+            },
+            false
+          );
+        }
       },
       false
     );
@@ -197,7 +221,7 @@
       },
       false
     );
-    toolsOptions(name);
+    toolsOptions(name, submit);
   }
 
   // Public APIs
