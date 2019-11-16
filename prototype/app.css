@@ -108,10 +108,14 @@
 
 @media (min-width: 959px) {
     #tools .tools-settings {
-        width: calc(30vw - 16px);
+        width: calc(32vw - 12px);
         float: left;
-        margin-right: 16px;
+        margin-right: 12px;
     }
+}
+
+#tools .tools-settings > textarea {
+    font-size: 14px;
 }
 
 #tools .textfield {
@@ -141,4 +145,10 @@
 
 .page-view #content {
     max-width: 100% !important;
+}
+
+@media (min-width: 1024px) {
+    .page-view #content-wrap {
+        width: 1080px;
+    }
 }
