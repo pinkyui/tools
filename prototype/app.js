@@ -94,7 +94,7 @@
       return (el.disabled = false);
     }
   };
-  
+
   // Checkbox
   var checked = function(el) {
     return el.checked === true;
@@ -103,7 +103,7 @@
   // Tools alert
   function toolsAlert(name, timeout, content, param) {
     var target = $alert(name);
-    var text = param ? ` ${param}` : '';
+    var text = param ? ' ' + param : '';
     target.innerHTML = content + text;
     showBlock(target);
     delay(function() {
