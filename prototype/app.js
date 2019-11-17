@@ -8,6 +8,7 @@
   'use strict';
 
   var arr = [];
+  var empty = '';
 
   var $ = function(el, selector) {
     if (typeof el === 'string') {
@@ -27,49 +28,108 @@
   };
   var commify = function(str) {
     return String(str)
-      .split('')
+      .split(empty)
       .reverse()
-      .join('')
+      .join(empty)
       .replace(/(...)(?!$)/g, '$1,')
-      .split('')
+      .split(empty)
       .reverse()
-      .join('');
+      .join(empty);
+  };
+
+  // Selector
+  var $input = function(name) {
+    return $('#' + name + '-input');
+  };
+  var $submit = function(name) {
+    return $('#' + name + '-submit');
+  };
+  var $clear = function(name) {
+    return $('#' + name + '-clear');
+  };
+  var $copy = function(name) {
+    return $('#' + name + '-copy');
+  };
+  var $alert = function(name) {
+    return $('#' + name + '-alert');
+  };
+  var $undo = function(name) {
+    return $('#' + name + '-undo');
+  };
+  var $size = function(name) {
+    return $('#' + name + '-size');
+  };
+
+  // Options
+  var $options = function(name) {
+    return $('#' + name + '-options');
+  };
+  var $settings = function(name) {
+    return $('#' + name + '-settings');
+  };
+  var $settings_text = function(name) {
+    return $('#' + name + '-settings textarea');
+  };
+
+  // Show and Hide
+  var showBlock = function(el) {
+    return (el.style.display = 'block');
+  };
+  var showInline = function(el) {
+    return (el.style.display = 'inline-block');
+  };
+  var hide = function(el) {
+    return (el.style.display = null);
+  };
+  var ifShowBlock = function(el) {
+    return el.style.display === 'block';
+  };
+
+  // Disabled and Enabled
+  var disable = function(el) {
+    return (el.disabled = true);
+  };
+  var enable = function(el) {
+    if (el.disabled === true) {
+      return (el.disabled = false);
+    }
+  };
+  
+  // Checkbox
+  var checked = function(el) {
+    return el.checked === true;
   };
 
   // Tools alert
-  function toolsAlert(name, timeout, content) {
-    var target = $('#' + name + '-alert');
-    target.innerHTML = content;
-    target.style.display = 'block';
+  function toolsAlert(name, timeout, content, param) {
+    var target = $alert(name);
+    var text = param ? ` ${param}` : '';
+    target.innerHTML = content + text;
+    showBlock(target);
     delay(function() {
-      target.style.display = 'none';
+      hide(target);
     }, timeout);
   }
 
   // Tools undo
   function toolsUndo(name, submit) {
-    var undo = $('#' + name + '-undo');
-    var input = $('#' + name + '-input');
-    undo.addEventListener(
-      'click',
-      function() {
-        var last = arr.pop();
-        input.value = last;
-        if (arr.length === 0) {
-          undo.style.display = 'none';
-        }
-        if (submit.disabled === true) {
-          submit.disabled = false;
-        }
-      },
-      false
-    );
+    var undo = $undo(name);
+    var input = $input(name);
+    undo.addEventListener('click', function(event) {
+      event.preventDefault();
+      var last = arr.pop();
+      input.value = last;
+      if (arr.length === 0) {
+        hide(undo);
+      }
+      enable(submit);
+    });
   }
 
   // Tools size calculate original and output
   function toolsSize(name, original, output) {
-    var size = $('#' + name + '-size');
-    size.style.display = 'block';
+    var size = $size(name);
+    showBlock(size);
     var diff = original.length - output.length;
     var savings = original.length
       ? ((100 * diff) / original.length).toFixed(2)
@@ -88,18 +148,16 @@
 
   // Tools clear button textarea/input
   function toolsClear(name, input, submit) {
-    var btn = $('#' + name + '-clear');
-    var size = $('#' + name + '-size');
+    var btn = $clear(name);
+    var size = $size(name);
     btn.addEventListener(
       'click',
       function() {
-        input.value = '';
+        input.value = empty;
         input.focus();
-        if (submit.disabled === true) {
-          submit.disabled = false;
-        }
+        enable(submit);
         if (size) {
-          size.style.display = 'none';
+          hide(size);
         }
       },
       false
@@ -108,29 +166,28 @@
 
   // Tools options for config
   function toolsOptions(name, submit) {
-    var options = $('#' + name + '-options');
-    var settings = $('#' + name + '-settings');
-    var textarea = $('#' + name + '-settings textarea');
+    var options = $options(name);
+    var settings = $settings(name);
+    var textarea = $settings_text(name);
     if (!options || !settings || !textarea) {
       return;
     }
     options.addEventListener(
       'click',
       function() {
-        if (options.checked === true) {
-          settings.style.display = 'block';
-
-          if (submit.disabled === true) {
-            textarea.addEventListener(
-              'input',
-              function() {
-                submit.disabled = false;
-              },
-              false
-            );
-          }
+        if (checked(options)) {
+          showBlock(settings);
         } else {
-          settings.style.display = 'none';
+          hide(settings);
+        }
+      },
+      false
+    );
+    textarea.addEventListener(
+      'input',
+      function() {
+        if (ifShowBlock(settings)) {
+          enable(submit);
         }
       },
       false
@@ -148,56 +205,49 @@
   var supportsSmoothScroll = 'scrollBehavior' in doc.documentElement.style;
 
   // Tools API
-  function tools(name, fn, options) {
-    options = options || {};
-    var submit = $('#' + name + '-submit');
-    var input = $('#' + name + '-input');
-    var undo = $('#' + name + '-undo');
-    var alert = $('#' + name + '-alert');
-    var size = $('#' + name + '-size');
+  function tools(name, fn, opts) {
+    opts = opts || {};
+
+    var submit = $submit(name);
+    var input = $input(name);
+    var undo = $undo(name);
+    var size = $size(name);
+    var alert = $alert(name);
+
     submit.addEventListener(
       'click',
       function() {
         var val = input.value;
-        if (val === '') {
+        if (val === empty) {
           toolsAlert(
             name,
             1500,
             'Please insert your <strong>code</strong> first!'
           );
-        }
-        if (!options.allowEmpty) {
-          if (!val.length) {
-            return;
-          }
-        }
-        alert.style.display = 'none';
-        try {
-          if (options.asyncResult) {
-            fn(val, options.asyncResult);
-          } else {
-            var result = fn(val, options.asyncResult);
+        } else {
+          hide(alert);
+          try {
+            var result = fn(val);
             var output = (input.value = result);
             output;
             if (size) {
               toolsSize(name, val, output);
             }
+          } catch (err) {
+            if (opts.exception) {
+              opts.exception(err, val);
+            }
+            return;
           }
-        } catch (err) {
-          if (options.exception) {
-            options.exception(err);
-          }
-          return;
-        }
-        arr.push(val);
-        submit.disabled = true;
-        undo.style.display = 'inline-block';
 
-        if (submit.disabled === true) {
+          arr.push(val);
+          disable(submit);
+          showInline(undo);
+
           input.addEventListener(
             'input',
             function() {
-              submit.disabled = false;
+              enable(submit);
             },
             false
           );
@@ -205,22 +255,22 @@
       },
       false
     );
+
     toolsUndo(name, submit);
     toolsClear(name, input, submit);
-    $('.tools-copy').addEventListener(
-      'click',
-      function() {
-        input.select();
-        if (!doc.execCommand) {
-          return;
-        }
-        doc.execCommand('copy');
-        if (supportsSmoothScroll) {
-          toolsScrollTo(input);
-        }
-      },
-      false
-    );
+
+    $copy(name).addEventListener('click', function(event) {
+      event.preventDefault();
+      input.select();
+      if (!doc.execCommand) {
+        return;
+      }
+      doc.execCommand('copy');
+      if (supportsSmoothScroll) {
+        toolsScrollTo(input);
+      }
+    });
+
     toolsOptions(name, submit);
   }
 
