@@ -9,7 +9,6 @@
 
   var arr = [];
   var empty = '';
-  var body = doc.body;
   var textFile = null;
 
   var $ = function(el, selector) {
