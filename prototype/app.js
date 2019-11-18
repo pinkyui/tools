@@ -250,6 +250,7 @@
       if (ifHide(copy)) {
         showInline(copy);
       }
+      enable(submit);
     });
   }
 
