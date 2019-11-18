@@ -3,13 +3,6 @@
     vertical-align: middle;
 }
 
-.checkbox {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-}
-
 .checkbox .checkbox-input {
     position: relative;
     display: inline-block;
@@ -82,6 +75,14 @@
     display: none;
 }
 
+#tools .tools-copy {
+    display: none;
+}
+
+#tools .tools-download {
+    display: none;
+}
+
 #tools .tools-settings {
     display: none;
 }
@@ -106,6 +107,15 @@
     display: none;
 }
 
+#tools .tools-alert.danger {
+    background: #f44336;
+    color: #fff;
+}
+
+#tools .tools-alert.warning {
+    background: #fdd835;
+}
+
 @media (min-width: 959px) {
     #tools .tools-settings {
         width: calc(32vw - 12px);
@@ -114,12 +124,8 @@
     }
 }
 
-#tools .tools-settings > textarea {
-    font-size: 14px;
-}
-
 #tools .textfield {
-    padding: 0 !important;
+    padding: 0;
 }
 
 #tools .textfield > textarea {
@@ -129,22 +135,28 @@
     border-style: solid;
     border-color: rgba(0, 0, 0, 0.12);
     border-bottom: 0;
+    font-size: 15px;
 }
 
 .night-mode #tools .textfield > textarea {
     border-color: rgba(255, 255, 255, 0.12);
 }
 
+#tools .tools-settings > textarea {
+    font-size: 13px;
+    font-family: monospace;
+}
+
 #tools .alert {
-    margin: 16px 0 !important;
+    margin: 16px 0;
 }
 
 .post {
-    margin: 0 !important;
+    margin: 0;
 }
 
 .page-view #content {
-    max-width: 100% !important;
+    max-width: 100%;
 }
 
 @media (min-width: 1024px) {
