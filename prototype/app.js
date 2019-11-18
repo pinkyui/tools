@@ -7,6 +7,7 @@
 (function(win, doc) {
   'use strict';
 
+  var index;
   var arr = [];
   var empty = '';
   var textFile = null;
@@ -18,6 +19,13 @@
       return el.querySelector(selector);
     }
   };
+  var $$ = function(el, selector) {
+    if (typeof el === 'string') {
+      return Array.prototype.slice.call(doc.querySelectorAll(el));
+    } else {
+      return Array.prototype.slice.call(el.querySelectorAll(selector));
+    }
+  };
   var delay = function(fn, wait) {
     var args = arguments;
     var _args = [],
@@ -26,6 +34,23 @@
       _args[len] = args[len + 2];
     }
     return setTimeout.apply(void 0, [fn, +wait || 0].concat(_args));
+  };
+  var each = function(obj, iterator, context) {
+    var len;
+    if (obj) {
+      if (obj !== null && typeof obj === 'object') {
+        for (index in obj) {
+          if (Object.prototype.hasOwnProperty.call(obj, index)) {
+            iterator.call(context, obj[index], index, obj);
+          }
+        }
+      } else {
+        for (index = 0, len = obj.length; index < len; index++) {
+          iterator.call(context, obj[index], index, obj);
+        }
+      }
+    }
+    return obj;
   };
   var commify = function(str) {
     return String(str)
@@ -63,8 +88,6 @@
     mimeType = mimeType || 'text/plain';
     // Avoid downloaded the page
     download.href = createDownloadFile(content, mimeType);
-    console.log(download.href);
-    console.log(mimeType);
   };
 
   // Native SmoothScroll
@@ -121,7 +144,13 @@
     return (el.style.display = 'inline-block');
   };
   var hide = function(el) {
-    return (el.style.display = null);
+    return (el.style.display = 'none');
+  };
+  var ifHide = function(el) {
+    return el.style.display === 'none';
+  };
+  var ifShowInline = function(el) {
+    return el.style.display === 'inline-block';
   };
   var ifShowBlock = function(el) {
     return el.style.display === 'block';
@@ -141,13 +170,22 @@
   };
 
   // Tools alert
-  function toolsAlert(name, timeout, content, param) {
-    var target = $alert(name);
-    var text = param ? ' ' + param : '';
-    target.innerHTML = content + text;
-    showBlock(target);
+  function toolsAlert(name, timeout, opts) {
+    opts = opts || {};
+    var type = opts.type ? opts.type : null;
+    var content = opts.content ? opts.content : null;
+    var param = opts.param ? ' ' + opts.param : '';
+    var alert = $alert(name);
+    alert.classList.add(type);
+    alert.innerHTML = content + param;
+    showBlock(alert);
     delay(function() {
-      hide(target);
+      if (ifShowBlock(alert)) {
+        hide(alert);
+      }
+      if (alert.classList.contains(type)) {
+        alert.classList.remove(type);
+      }
     }, timeout);
   }
 
@@ -162,49 +200,6 @@
     // To retain the Line breaks
     output = output.replace(/\n/g, '\r\n');
     updateDownload(download, output, mimeType);
-  }
-
-  // Tools undo
-  function toolsUndo(name, submit) {
-    var undo = $undo(name);
-    var input = $input(name);
-    var download = $download(name);
-    undo.addEventListener('click', function(event) {
-      event.preventDefault();
-      var last = arr.pop();
-      input.value = last;
-      if (arr.length === 0) {
-        hide(undo);
-      }
-      if (download) {
-        hide(download);
-        updateDownload(download);
-      }
-      enable(submit);
-    });
-  }
-
-  // Tools size calculate original and output
-  function toolsSize(name, original, output) {
-    var size = $size(name);
-    if (!size) {
-      return;
-    }
-    showBlock(size);
-    var diff = original.length - output.length;
-    var savings = original.length
-      ? ((100 * diff) / original.length).toFixed(2)
-      : 0;
-    size.innerHTML =
-      'Original size: <strong>' +
-      commify(original.length) +
-      ' bytes</strong>.<br> Output size: <strong>' +
-      commify(output.length) +
-      ' bytes</strong>.<br> Saving: <strong>' +
-      commify(diff) +
-      ' bytes (' +
-      savings +
-      '%)</strong>.</span>';
   }
 
   // Tools copy clipboard
@@ -235,6 +230,52 @@
     );
   }
 
+  // Tools undo
+  function toolsUndo(name, submit) {
+    var undo = $undo(name);
+    var input = $input(name);
+    var download = $download(name);
+    var copy = $copy(name);
+    undo.addEventListener('click', function(event) {
+      event.preventDefault();
+      var last = arr.pop();
+      input.value = last;
+      if (arr.length === 0) {
+        hide(undo);
+      }
+      if (download) {
+        hide(download);
+        updateDownload(download);
+      }
+      if (ifHide(copy)) {
+        showInline(copy);
+      }
+    });
+  }
+
+  // Tools size calculate original and output
+  function toolsSize(name, original, output) {
+    var size = $size(name);
+    if (!size) {
+      return;
+    }
+    showBlock(size);
+    var diff = original.length - output.length;
+    var savings = original.length
+      ? ((100 * diff) / original.length).toFixed(2)
+      : 0;
+    size.innerHTML =
+      'Original size: <strong>' +
+      commify(original.length) +
+      ' bytes</strong>.<br> Output size: <strong>' +
+      commify(output.length) +
+      ' bytes</strong>.<br> Saving: <strong>' +
+      commify(diff) +
+      ' bytes (' +
+      savings +
+      '%)</strong>.</span>';
+  }
+
   // Tools clear button textarea/input
   function toolsClear(name, input, submit) {
     var btn = $clear(name);
@@ -247,7 +288,7 @@
         input.value = empty;
         input.focus();
         enable(submit);
-        if (copy) {
+        if (ifShowInline(copy)) {
           hide(copy);
         }
         if (size) {
@@ -274,6 +315,7 @@
       'click',
       function() {
         if (checked(options)) {
+          enable(submit);
           showBlock(settings);
         } else {
           hide(settings);
@@ -292,6 +334,23 @@
     );
   }
 
+  // Tools switch/checkbox
+  function toolsSwitch(submit) {
+    var sw = $$('.tools-switch');
+    if (!sw) {
+      return;
+    }
+    each(sw, function(el) {
+      el.addEventListener(
+        'click',
+        function() {
+          enable(submit);
+        },
+        false
+      );
+    });
+  }
+
   // Tools API
   function tools(name, fn, opts) {
     opts = opts || {};
@@ -308,11 +367,10 @@
       function() {
         var val = input.value;
         if (val === empty) {
-          return toolsAlert(
-            name,
-            1500,
-            'Please insert your <strong>code</strong> first!'
-          );
+          return toolsAlert(name, 1500, {
+            type: 'warning',
+            content: 'Please insert your <strong>code</strong> first!'
+          });
         } else {
           hide(alert);
           try {
@@ -324,7 +382,7 @@
             toolsDownload(name, output);
           } catch (err) {
             if (opts.exception) {
-              opts.exception(err, val);
+              opts.exception(err);
             }
             return;
           }
@@ -332,6 +390,10 @@
           arr.push(val);
           disable(submit);
           showInline(undo);
+          // Avoid height the content then scroll to input
+          if (supportsSmoothScroll) {
+            toolsScrollTo(input);
+          }
 
           input.addEventListener(
             'input',
@@ -349,6 +411,7 @@
     toolsCopy(name);
     toolsClear(name, input, submit);
     toolsOptions(name, submit);
+    toolsSwitch(submit);
     if (download) {
       updateDownload(download);
     }
