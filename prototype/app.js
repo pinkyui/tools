@@ -605,7 +605,7 @@
             } else if (state.readyState === 4) {
               toolsAlert(alert, 4000, {
                 type: 'warning',
-                content: `Something has gone wrong, maybe server busy or invalid URL? <br>Try again later.`
+                content: 'Something has gone wrong, maybe server busy or invalid URL? <br>Try again later.'
               });
               input.value = empty;
             }
