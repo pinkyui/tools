@@ -276,6 +276,11 @@
   background: #fdd835;
 }
 
+#tools .tools-alert.info {
+  background: #1976d2;
+  color: #fff;
+}
+
 @media (min-width: 959px) {
   #tools .tools-settings {
     width: calc(32vw - 12px);
@@ -284,16 +289,9 @@
   }
 }
 
-#tools .tools-inline {
-  margin: 16px 0;
-}
-
-#tools .tools-upload {
-  margin: 0 !important;
-}
-
 #tools .textfield {
   padding: 0;
+  position: relative;
 }
 
 #tools .textfield > textarea {
@@ -315,6 +313,14 @@
 #tools .tools-settings > textarea {
   font-size: 13px;
   font-family: monospace;
+}
+
+#tools .tools-inline {
+  margin: 16px 0;
+}
+
+#tools .tools-upload {
+  margin: 0 !important;
 }
 
 #tools .alert {
