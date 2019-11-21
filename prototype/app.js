@@ -274,23 +274,33 @@
   var supportsSmoothScroll = 'scrollBehavior' in doc.documentElement.style;
 
   // Tools alert
-  function toolsAlert(name, timeout, opts) {
+  function toolsAlert(name, opts) {
     opts = opts || {};
     var type = opts.type ? opts.type : null;
+    var canDelay = opts.delay.enable ? opts.delay.enable : false;
+    var duration = opts.delay.duration ? opts.delay.duration : 0;
     var content = opts.content ? opts.content : null;
     var param = opts.param ? ' ' + opts.param : '';
     var alert = $alert(name);
-    alert.classList.add(type);
-    alert.innerHTML = content + param;
-    showBlock(alert);
-    delay(function() {
-      if (ifShowBlock(alert)) {
+
+    if (!ifShowBlock(alert)) {
+      alert.classList.add(type);
+      alert.innerHTML = content + param;
+      showBlock(alert);
+    }
+
+    var alertHide = function() {
+      if (ifShowBlock(alert) && alert.classList.contains(type)) {
         hide(alert);
+        alert.innerHTML = empty;
+        alert.classList.remove('warning', 'danger', 'info');
       }
-      if (alert.classList.contains(type)) {
-        alert.classList.remove(type);
-      }
-    }, timeout);
+    };
+    if (canDelay === true) {
+      delay(alertHide, duration);
+    } else {
+      alertHide;
+    }
   }
   // Tools Download
   function toolsDownload(download, output) {
@@ -510,12 +520,16 @@
           event.stopPropagation();
           event.preventDefault();
           var file = event.dataTransfer.files[0];
-          if (event.type == 'drop') {
+          if (event.type === 'drop') {
             if (file.type != opts.inputMimeType) {
-              toolsAlert(alert, 5000, {
+              toolsAlert(alert, {
+                delay: {
+                  enable: true,
+                  duration: 5000
+                },
                 type: 'warning',
                 content:
-                  'Selected file is not a type file with extension <strong>' +
+                  'Selected file is not a type file with extension .<strong>' +
                   opts.inputHumanFormat +
                   '</strong>'
               });
@@ -546,10 +560,14 @@
           event.preventDefault();
           var file = event.target.files[0];
           if (file.type != opts.inputMimeType) {
-            toolsAlert(alert, 5000, {
+            toolsAlert(alert, {
+              delay: {
+                enable: true,
+                duration: 5000
+              },
               type: 'warning',
               content:
-                'Selected file is not a type file with extension <strong>' +
+                'Selected file is not a type file with extension .<strong>' +
                 opts.inputHumanFormat +
                 '</strong>'
             });
@@ -564,24 +582,32 @@
           }
           selectedFile = file;
         }
-        upload.addEventListener('click', uploadFile, false);
+        upload.addEventListener('change', uploadFile, false);
       }
     }
   }
   // Tools Load Url
   function toolsLoad(load, loadBtn, input, alert, copy, submit, opts) {
-    // use cors proxy because blogger :(
+    // Use CORS with proxy because blogger :(
     // https://github.com/Rob--W/cors-anywhere
     var corsAPI = 'https://cors-anywhere.herokuapp.com/';
     if (load || loadBtn) {
       var loadUrl = function() {
         if (isEmpty(load.value)) {
-          toolsAlert(alert, 1500, {
+          toolsAlert(alert, {
+            delay: {
+              enable: true,
+              duration: 1500
+            },
             type: 'warning',
             content: 'Sorry, Input URL is empty!'
           });
         } else if (!load.value.endsWith(opts.urlExtension)) {
-          toolsAlert(alert, 4000, {
+          toolsAlert(alert, {
+            delay: {
+              enable: true,
+              duration: 4000
+            },
             type: 'warning',
             content:
               'Sorry URL is not a type file with extension or end with <strong>' +
@@ -603,9 +629,14 @@
             ) {
               input.value = response;
             } else if (state.readyState === 4) {
-              toolsAlert(alert, 4000, {
+              toolsAlert(alert, {
+                delay: {
+                  enable: true,
+                  duration: 4000
+                },
                 type: 'warning',
-                content: 'Something has gone wrong, maybe server busy or invalid URL? <br>Try again later.'
+                content:
+                  'Something has gone wrong, maybe server busy or invalid URL? <br>Try again later.'
               });
               input.value = empty;
             }
@@ -654,14 +685,21 @@
       function() {
         possibleValue = input.value;
         if (isEmpty(possibleValue)) {
-          toolsAlert(name, 1500, {
+          toolsAlert(name, {
+            delay: {
+              enable: true,
+              duration: 1500
+            },
             type: 'warning',
             content: 'Sorry, Input is empty!'
           });
         } else {
           // Keep console clean after submit
           console.clear();
-          hide(alert);
+          // Avoid conflict show alert
+          if (ifShowBlock(alert)) {
+            hide(alert);
+          }
           try {
             result = fn(possibleValue);
 
@@ -671,6 +709,16 @@
 
             if (possibleValue === finalResult) {
               enable(submit);
+              // Show alert if input same as output
+              toolsAlert(name, {
+                delay: {
+                  enable: true,
+                  duration: 5000
+                },
+                type: 'info',
+                content:
+                  'Nice, your code already modified, maybe your code same output as this tool!'
+              });
             } else {
               arr.push(possibleValue);
               disable(submit);
