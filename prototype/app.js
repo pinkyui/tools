@@ -11,7 +11,6 @@
   var arr = [];
   var empty = '';
   var textFile = null;
-  var selectedFile;
 
   // Polyfill String.prototype.endsWith()
   if (!String.prototype.endsWith) {
@@ -26,6 +25,9 @@
   // Utils
   var isString = function(val) {
     return typeof val === 'string';
+  };
+  var isFunction = function(val) {
+    return typeof val === 'function';
   };
   var isObject = function(val) {
     return val !== null && typeof val === 'object';
@@ -76,17 +78,23 @@
     }
     return obj;
   };
-  var commify = function(str) {
-    return String(str)
-      .split(empty)
-      .reverse()
-      .join(empty)
-      .replace(/(...)(?!$)/g, '$1,')
-      .split(empty)
-      .reverse()
-      .join(empty);
+  var preventDefaults = function(event) {
+    event.preventDefault();
+    event.stopPropagation();
   };
-
+  var endsWithAny = function(suffixes, str) {
+    /*for (let suffix of suffixes) {
+      if (str.endsWith(suffix)) {  
+        return true;
+      }
+    }*/
+    return suffixes.some(function(suffix) {
+      if (str.endsWith(suffix)) {
+        return true;
+      }
+    });
+    return false;
+  };
   /*
    * Ajax helper, get and post
    * 
@@ -113,7 +121,9 @@
       // xhr.onreadystatechange
       // use onload because loaded full content?
       xhr.onload = function() {
-        cb(this);
+        if (cb && isFunction(cb)) {
+          cb(this);
+        }
       };
       xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
       xhr.send();
@@ -136,7 +146,9 @@
         : new ActiveXObject('Microsoft.XMLHTTP');
       xhr.open('POST', url, true);
       xhr.onreadystatechange = function() {
-        cb(this);
+        if (cb && isFunction(cb)) {
+          cb(this);
+        }
       };
       xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
       xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -194,6 +206,9 @@
   var $example_btn = function(name) {
     return $('#' + name + '-example-btn');
   };
+  var $external = function(name) {
+    return $('#' + name + '-external');
+  };
   var $upload = function(name) {
     return $('#' + name + '-upload');
   };
@@ -234,6 +249,40 @@
   // Checkbox
   var checked = function(el) {
     return el.checked === true;
+  };
+
+  var commify = function(str) {
+    return String(str)
+      .split(empty)
+      .reverse()
+      .join(empty)
+      .replace(/(...)(?!$)/g, '$1,')
+      .split(empty)
+      .reverse()
+      .join(empty);
+  };
+  var fileSize = function(target) {
+    if (target < 1024) {
+      return target + ' Bytes';
+    } else if (target >= 1024 && target < 1048576) {
+      return (target / 1024).toFixed(1) + ' KB';
+    } else if (target >= 1048576) {
+      return (target / 1048576).toFixed(1) + ' MB';
+    }
+  };
+  var fileMaxSize = function(target, max) {
+    if (target > max) {
+      return true;
+    }
+    return false;
+  };
+  var validateMimeType = function(file, types) {
+    for (index = 0; index < types.length; index++) {
+      if (file.type === types[index]) {
+        return true;
+      }
+    }
+    return false;
   };
 
   // create Download file
@@ -280,15 +329,13 @@
     var canDelay = opts.delay.enable ? opts.delay.enable : false;
     var duration = opts.delay.duration ? opts.delay.duration : 0;
     var content = opts.content ? opts.content : null;
-    var param = opts.param ? ' ' + opts.param : '';
+    var param = opts.param ? ' ' + opts.param : empty;
     var alert = $alert(name);
-
     if (!ifShowBlock(alert)) {
       alert.classList.add(type);
       alert.innerHTML = content + param;
       showBlock(alert);
     }
-
     var alertHide = function() {
       if (ifShowBlock(alert) && alert.classList.contains(type)) {
         hide(alert);
@@ -511,111 +558,188 @@
       );
     }
   }
+
+  // Multiple FileReader
+  var fileReader = function(
+    input,
+    file,
+    mimeTypes,
+    mimeHumans,
+    maxSizeBytes,
+    maxSizeHumans,
+    alert,
+    error,
+    cb
+  ) {
+    if (win.FileReader) {
+      each(file, function(files) {
+        if (!validateMimeType(files, mimeTypes)) {
+          toolsAlert(alert, {
+            delay: {
+              enable: true,
+              duration: error.duration || 4000
+            },
+            type: error.type || 'warning',
+            content:
+              'File name ' +
+              files.name +
+              ': ' +
+              (error.text ||
+                'Not a valid file type. Update your selection file with type') +
+              ' (' +
+              mimeHumans +
+              ').'
+          });
+        } else {
+          if (fileMaxSize(files.size, maxSizeBytes)) {
+            toolsAlert(alert, {
+              delay: {
+                enable: true,
+                duration: error.duration || 4000
+              },
+              type: error.type || 'warning',
+              content:
+                'File name ' +
+                files.name +
+                ' is over size, maximum ' +
+                maxSizeHumans +
+                '.'
+            });
+          } else {
+            var reader = new FileReader();
+            reader.onload = function(event) {
+              input.value = event.target.result;
+              if (cb && isFunction(cb)) {
+                cb(files);
+              }
+            };
+            reader.readAsText(files);
+          }
+        }
+      });
+    }
+  };
   // Tools drag
   function toolsDrag(input, alert, copy, submit, opts) {
     var drag = $('[data-tools-drag]', input);
     if (drag) {
-      if (win.FileReader) {
-        function dragFile(event) {
-          event.stopPropagation();
-          event.preventDefault();
-          var file = event.dataTransfer.files[0];
-          if (event.type === 'drop') {
-            if (file.type != opts.inputMimeType) {
-              toolsAlert(alert, {
-                delay: {
-                  enable: true,
-                  duration: 5000
-                },
-                type: 'warning',
-                content:
-                  'Selected file is not a type file with extension .<strong>' +
-                  opts.inputHumanFormat +
-                  '</strong>'
-              });
-            } else {
-              var reader = new FileReader();
-              reader.onload = function(evt) {
-                showInline(copy);
-                enable(submit);
-                input.value = evt.target.result;
-              };
-              reader.readAsText(file);
+      function dragFile(event) {
+        preventDefaults(event);
+        var dragError = opts.drag.error;
+        var mimeTypes = opts.files.inputMimeTypes;
+        var mimeHumans = opts.files.inputMimeHumans;
+        var maxSizeBytes = opts.files.inputMaxSizeBytes;
+        var maxSizeHumans = opts.files.inputMaxSizeHumans;
+        var file = event.dataTransfer.files;
+
+        // accept=".txt, .json, text/plain, application/json"
+        // multiple
+        // .js, .mjs, application/javascript, text/javascript, javascript/esm
+        // text/xml, application/xml
+
+        if (event.type === 'drop') {
+          fileReader(
+            input,
+            file,
+            mimeTypes,
+            mimeHumans,
+            maxSizeBytes,
+            maxSizeHumans,
+            alert,
+            dragError,
+            function() {
+              showInline(copy);
+              enable(submit);
             }
-            selectedFile = file;
-          }
+          );
         }
-        input.addEventListener('dragenter', dragFile, false);
-        input.addEventListener('dragover', dragFile, false);
-        input.addEventListener('drop', dragFile, false);
       }
+      input.addEventListener('dragenter', dragFile, false);
+      input.addEventListener('dragover', dragFile, false);
+      input.addEventListener('drop', dragFile, false);
     }
   }
   // Tools upload
-  function toolsUpload(upload, input, alert, copy, submit, opts) {
-    if (upload) {
-      if (win.FileReader) {
-        function uploadFile(event) {
-          event.stopPropagation();
-          event.preventDefault();
-          var file = event.target.files[0];
-          if (file.type != opts.inputMimeType) {
-            toolsAlert(alert, {
-              delay: {
-                enable: true,
-                duration: 5000
-              },
-              type: 'warning',
-              content:
-                'Selected file is not a type file with extension .<strong>' +
-                opts.inputHumanFormat +
-                '</strong>'
-            });
-          } else {
-            var reader = new FileReader();
-            reader.onload = function(evt) {
-              showInline(copy);
-              enable(submit);
-              input.value = evt.target.result;
-            };
-            reader.readAsText(file);
-          }
-          selectedFile = file;
+  function toolsUpload(external, upload, input, alert, copy, submit, opts) {
+    if (external || upload) {
+      function uploadFile(event) {
+        preventDefaults(event);
+        var uploadError = opts.upload.error;
+        var mimeTypes = opts.files.inputMimeTypes;
+        var mimeHumans = opts.files.inputMimeHumans;
+        var maxSizeBytes = opts.files.inputMaxSizeBytes;
+        var maxSizeHumans = opts.files.inputMaxSizeHumans;
+        var file = event.target.files;
+        var info = $('.tools-file-info', external);
+        if (!info) {
+          return;
         }
-        upload.addEventListener('change', uploadFile, false);
+        fileReader(
+          input,
+          file,
+          mimeTypes,
+          mimeHumans,
+          maxSizeBytes,
+          maxSizeHumans,
+          alert,
+          uploadError,
+          function(files) {
+            showInline(copy);
+            enable(submit);
+            info.innerText =
+              'File name ' +
+              files.name +
+              ', file size ' +
+              fileSize(files.size) +
+              '.';
+          }
+        );
       }
+      upload.addEventListener('change', uploadFile, false);
     }
   }
+
   // Tools Load Url
   function toolsLoad(load, loadBtn, input, alert, copy, submit, opts) {
     // Use CORS with proxy because blogger :(
-    // https://github.com/Rob--W/cors-anywhere
-    var corsAPI = 'https://cors-anywhere.herokuapp.com/';
+    var corsAPI = opts.loadURL.corsAPI || empty;
     if (load || loadBtn) {
       var loadUrl = function() {
+        var loadEmpty = opts.loadURL.empty;
+        var loadError = opts.loadURL.error;
+        var loadFail = opts.loadURL.fail;
+        var urlExtensions = opts.files.inputUrlExtensions;
+        var urlHumans = opts.files.inputUrlHumans;
+        var maxSizeBytes = opts.files.inputMaxSizeBytes;
+        var maxSizeHumans = opts.files.inputMaxSizeHumans;
         if (isEmpty(load.value)) {
           toolsAlert(alert, {
             delay: {
               enable: true,
-              duration: 1500
+              duration: loadEmpty.duration || 1500
             },
-            type: 'warning',
-            content: 'Sorry, Input URL is empty!'
+            type: loadEmpty.type || 'warning',
+            content: loadEmpty.text || 'Sorry, Input URL is empty!'
           });
-        } else if (!load.value.endsWith(opts.urlExtension)) {
+        } else if (!endsWithAny(urlExtensions, load.value)) {
           toolsAlert(alert, {
             delay: {
               enable: true,
-              duration: 4000
+              duration: loadError.duration || 4000
             },
-            type: 'warning',
+            type: loadError.type || 'warning',
             content:
-              'Sorry URL is not a type file with extension or end with <strong>' +
-              opts.urlExtension +
-              '</strong>'
+              'URL ' +
+              load.value +
+              ': ' +
+              (loadError.text ||
+                'Not a valid URL. Update your input URL with valid extension or ends with') +
+              ' (' +
+              urlHumans +
+              ').'
           });
         } else {
-          input.value = 'Loading...';
+          input.value = opts.loadURL.loading || 'Loading...';
           input.readOnly = true;
           ajax.get(corsAPI + load.value, function(state) {
             input.readOnly = false;
@@ -627,15 +751,33 @@
               state.status === 200 &&
               response.toLowerCase().indexOf('error') === -1
             ) {
-              input.value = response;
+              if (fileMaxSize(response.length, maxSizeBytes)) {
+                toolsAlert(alert, {
+                  delay: {
+                    enable: true,
+                    duration: loadError.duration || 4000
+                  },
+                  type: loadError.type || 'warning',
+                  content:
+                    'URL ' +
+                    load.value +
+                    ' that containing data is over size, maximum ' +
+                    maxSizeHumans +
+                    '.'
+                });
+                input.value = empty;
+              } else {
+                input.value = response;
+              }
             } else if (state.readyState === 4) {
               toolsAlert(alert, {
                 delay: {
                   enable: true,
-                  duration: 4000
+                  duration: loadFail.duration || 4000
                 },
-                type: 'warning',
+                type: loadFail.type || 'danger',
                 content:
+                  loadFail.text ||
                   'Something has gone wrong, maybe server busy or invalid URL? <br>Try again later.'
               });
               input.value = empty;
@@ -650,6 +792,7 @@
   // Tools API
   function tools(name, fn, opts) {
     opts = opts || {};
+    var set = opts.settings;
 
     var useInOut, useInput, possibleValue, possibleOutput, result, finalResult;
 
@@ -676,6 +819,7 @@
     var example = $example(name);
     var exampleBtn = $example_btn(name);
 
+    var external = $external(name);
     var upload = $upload(name);
     var load = $load(name);
     var loadBtn = $load_btn(name);
@@ -688,10 +832,10 @@
           toolsAlert(name, {
             delay: {
               enable: true,
-              duration: 1500
+              duration: set.empty.duration || 1500
             },
-            type: 'warning',
-            content: 'Sorry, Input is empty!'
+            type: set.empty.type || 'warning',
+            content: set.empty.text || 'Sorry, Input is empty!'
           });
         } else {
           // Keep console clean after submit
@@ -713,11 +857,12 @@
               toolsAlert(name, {
                 delay: {
                   enable: true,
-                  duration: 5000
+                  duration: set.sameAs.druation || 5000
                 },
-                type: 'info',
+                type: set.sameAs.type || 'info',
                 content:
-                  'Nice, your code already modified, maybe your code same output as this tool!'
+                  set.sameAs.text ||
+                  'Well done, the code already modified, maybe the code same output as this tool!'
               });
             } else {
               arr.push(possibleValue);
@@ -758,7 +903,7 @@
     toolsExpand(input, submit, clear, undo);
     toolsExample(example, exampleBtn);
     toolsDrag(input, name, copy, submit, opts);
-    toolsUpload(upload, input, name, copy, submit, opts);
+    toolsUpload(external, upload, input, name, copy, submit, opts);
     toolsLoad(load, loadBtn, input, name, copy, submit, opts);
   }
 
