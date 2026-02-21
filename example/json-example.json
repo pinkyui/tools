@@ -1,0 +1,20 @@
+{
+   "active": true,
+   "person": [
+     {
+       "name": "John Doe",
+       "age": 22,
+       "married": false,
+       "labels": [
+         "Foo",
+         "Bar"
+       ]
+     },
+     {
+       "name": "Anonymous",
+       "age": 1000,
+       "married": true,
+       "labels": []
+     }
+   ]
+}
